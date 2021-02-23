@@ -2,7 +2,7 @@
 A simple visual database designer.
 
 # Usage
-'''make
+'''Makefile
 make run
 ''' Will run the program in development.
 
