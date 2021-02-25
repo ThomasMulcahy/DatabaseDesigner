@@ -1,9 +1,42 @@
 #include "platform.h"
 #include "view.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 
-//TODO: We initiate a view here on load, when we implement context dependant file loading
-//this will need to be changed.
+#include "database.h"
+
+void onCreate(ViewData* data) {
+    View *view = malloc(sizeof(View));
+    Database *db = getData(data, "db");
+    db = malloc(sizeof(Database));
+    db->tables = NULL;
+
+    addData(data, "db", db);
+}
+
+void onViewEvent(ViewData *data, ViewEvent event) {
+     switch (event.eventKind) {
+        case KEY_DOWN_EVENT:
+
+            break;
+        case MOUSE_UP_EVENT:{
+                Table *table = createTable(event.mouseX, event.mouseY, "Test");
+
+                Database *db = (Database *) getData(data, "db");
+                if (db != NULL) {
+                    table->nextTable = db->tables;
+                    db->tables = table;
+                }
+            }
+            break;
+    }
+}
+
+void onViewDestroy(ViewData *data) {
+
+}
+
 int main() {
 
     WindowOpt options = {
@@ -12,5 +45,16 @@ int main() {
         .height = 400
     };
 
-    return platformRun(&options);
+    ViewData *data = malloc(sizeof(ViewData));
+    data->values = NULL;
+
+    View view = {
+        .data = data,
+
+        .onCreate = onCreate,
+        .onViewEvent = onViewEvent,
+        .onViewDestroy = onViewDestroy
+    };
+
+    return platformRun(&options, &view);
 }

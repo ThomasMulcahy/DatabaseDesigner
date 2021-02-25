@@ -41,6 +41,8 @@ typedef struct _Table {
     int height;
     int width;
 
+    int isSelected;
+
     //LinkedList
     struct _Table *nextTable;
 } Table;
@@ -57,6 +59,8 @@ typedef struct _Database {
  * Creates a table at a desired location.
  */
 Table *createTable(int xPos, int yPos, char *tableName);
+
+void addRow(Table *table, char *name, enum DataType type);
 
 void deleteTable(Table table);
 

@@ -7,8 +7,8 @@
 @interface AppView : NSView <NSWindowDelegate>
 {
 	//TODO: Temp - Delete
-	NSFont *font;
-	View *view;
+	NSFont *_font;
+	View *_view;
 }
 @end
 
@@ -16,10 +16,15 @@
 
 	- (instancetype) initWithFrame:(NSRect)frameRect {
 		[super initWithFrame:frameRect];
-
-		view = onViewCreate();
-
+		_font = [NSFont fontWithName:@"Menlo" size:13];
 		return self;
+	}
+
+	- (void) onCreate {
+		if (_view == NULL)
+			return;
+
+		_view->onCreate(_view->data);
 	}
 
     //Accept window events
@@ -28,6 +33,8 @@
     }
 
     - (void) windowWillClose:(NSNotification *)notification {
+		//TODO: Free memory correctly
+
         [NSApp terminate:self];
     } 
 
@@ -36,6 +43,7 @@
     }  
 
 	//TODO: Move to View for rendering!!!
+	//TODO: Allow for specific redraws
 	- (void) drawRect:(NSRect)rectToRedraw {
 		//We should use attributed strings for rendering, this could help with formatting? Below is an example
 		//NSDictionary *attributes = [NSDictionary dictionaryWithObjectsAndKeys:[NSFont fontWithName:@"Menlo" size:13], 
@@ -45,10 +53,10 @@
 		//NSSize attrSize = [currentText size];
 		//[currentText drawAtPoint:NSMakePoint(0, 0)];
 
-		if (view == NULL)
+		if (_view == NULL)
 			return;
 
-		Database *db = view->db;
+		Database *db = (Database *) getData(_view->data, "db");
 		if (db == NULL)
 			return;
 
@@ -64,10 +72,23 @@
 				[tableNameRect setLineWidth:2.0];
 				[tableNameRect stroke];
 				[tableNameRect fill];
+
+				//TODO: Temp
+				float lineHeight = _font.ascender - _font.descender + _font.leading;
+
+				NSDictionary *attributes = [NSDictionary dictionaryWithObjectsAndKeys:_font, 
+											NSFontAttributeName,[NSColor whiteColor], 
+											NSForegroundColorAttributeName, nil];
+				NSString *str  = [NSString stringWithCString:table->tableName encoding:NSUTF8StringEncoding];
+				[str drawAtPoint: NSMakePoint(table->xPos + 5, table->yPos + table->height - (lineHeight / 2) - (25.0 / 2.0)) withAttributes: attributes];
+			
 			}
 
 			NSBezierPath *tableRect = [NSBezierPath bezierPathWithRect:NSMakeRect(table->xPos, table->yPos, table->width, table->height)];
 			[[NSColor darkGrayColor] setStroke];
+			if (table->isSelected)
+				[[NSColor blueColor] setStroke];
+
 			[tableRect setLineWidth:2.0];
 			[tableRect stroke];
 
@@ -106,7 +127,7 @@
 			.mouseY = loc.y 
 		};
 
-		onViewEvent(view, ve);
+		_view->onViewEvent(_view->data, ve);
 		[self setNeedsDisplay:YES];
 	}
 
@@ -143,17 +164,22 @@
 			.code = aChar
 		};
 
-		onViewEvent(view, ve);
+		_view->onViewEvent(_view->data, ve);
 		[self setNeedsDisplay:YES];
 	}
 
 	- (void) keyUp: (NSEvent*) event {
 
 	}
+
+	- (void) setView: (View *) view {
+		if (view != NULL)
+			_view = view;
+	}
 @end
 
 //Entry point for the Cocoa application.
-int platformRun(WindowOpt *winOptions) {
+int platformRun(WindowOpt *winOptions, View *view) {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSApp = [NSApplication sharedApplication];
 
@@ -193,13 +219,15 @@ int platformRun(WindowOpt *winOptions) {
 	[appMenuItem setSubmenu:appMenu];
 
     //Create app delegate to handle system events
-	AppView* view = [[[AppView alloc] initWithFrame:frame] autorelease];
+	AppView* appView = [[[AppView alloc] initWithFrame:frame] autorelease];
+	[appView setView:view];
+	[appView onCreate];
 	[window setAcceptsMouseMovedEvents:YES];
-	[window setContentView:view];
-	[window setDelegate:view];
+	[window setContentView:appView];
+	[window setDelegate:appView];
 
-	[window setContentView:view];
-	[window makeFirstResponder:view];
+	[window setContentView:appView];
+	[window makeFirstResponder:appView];
 
 	//Set app title
 	[window setTitle:[NSString stringWithCString:winOptions->title encoding:NSASCIIStringEncoding]];

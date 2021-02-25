@@ -1,12 +1,9 @@
 #ifndef VIEW_H
 #define VIEW_H
 
-#include "database.h"
-
-#define KEY_H_CODE 0x68
-#define KEY_J_CODE 0x6a
-#define KEY_K_CODE 0x6b
-#define KEY_L_CODE 0x6c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef enum _ViewEventKind {
     KEY_DOWN_EVENT,
@@ -24,14 +21,41 @@ typedef struct _ViewEvent {
     int mouseY;
 } ViewEvent;
 
+typedef struct _KeyValue {
+    char *key;
+    void *value;
+
+    //Linked list
+    struct _KeyValue *next;
+} KeyValue;
+
+/**
+ * Used to pass data to other functions which the View interacts with,
+ * use this for custom data.
+ * 
+ * This uses key/value pairs to gain access to memory.
+ *
+ * Use the provided helper functions to access this data, don't forget to cast
+ * the result.
+ */
+typedef struct _ViewData {
+    KeyValue *values;
+} ViewData;
+
 typedef struct _View {
-    Database* db;
+    ViewData *data;
+
+    void (*onCreate)(ViewData*);
+    void (*onViewEvent)(ViewData*, ViewEvent);
+    void (*onViewDestroy)(ViewData*);
+
 } View;
 
-View* onViewCreate();
+/**
+ * Warning: This can return NULL, so check before using pointer.
+ */
+void *getData(ViewData *data, char *key);
 
-void onViewEvent(View *view, ViewEvent event);
-
-void viewDestroy(View *view);
+void addData(ViewData *data, char *key, void *value);
 
 #endif

@@ -1,31 +1,32 @@
 #include "view.h"
-#include "database.h"
 #include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
 
-View* onViewCreate() {
-    View *view = malloc(sizeof(View));
-    view->db = malloc(sizeof(Database));
-    view->db->tables = NULL;
-    return view;
-}
+void *getData(ViewData *data, char *key) {
+    if (data == NULL)
+        return NULL;
 
-void onViewEvent(View *view, ViewEvent event) {
-    switch (event.eventKind) {
-        case KEY_DOWN_EVENT:
+    if (data->values == NULL)
+        return NULL;
 
-            break;
-        case MOUSE_UP_EVENT:{
-                Table *table = createTable(event.mouseX, event.mouseY, "Test");
-
-                Database *db = view->db;
-                table->nextTable = db->tables;
-                db->tables = table;
-            }
-            break;
+    KeyValue *pair = data->values;
+    while (pair != NULL) {
+        if (strcmp(pair->key, key) == 0) {
+            return pair->value;
+        }
     }
+    return NULL;
 }
 
-void viewDestroy(View *view) {
+void addData(ViewData *data, char *key, void *value) {
+    KeyValue *pair = malloc(sizeof(KeyValue));
+    pair->key = key;
+    pair->value = value;
 
+    if (data->values != NULL) {
+        pair->next = data->values;
+        data->values = pair;
+    } else {
+        data->values = pair;
+    }
 }
